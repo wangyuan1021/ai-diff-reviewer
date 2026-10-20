@@ -2,6 +2,8 @@
 
 一个可解释、可评测、隐私优先的 Git Diff 风险分析工具。当前 Day 01 版本只运行本地静态规则，不调用外部 AI，也不保存原始 Diff。
 
+当前开发状态、验证证据、技术决策和下一步计划见 [`docs/PROGRESS.md`](docs/PROGRESS.md)。
+
 ## 当前能力
 
 - 粘贴 Unified Diff，或上传 `.diff`、`.patch`、`.txt` 文件。
