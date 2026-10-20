@@ -9,7 +9,7 @@
 - GitHub 仓库：以当前项目的 `origin` remote 为准
 - 当前分支：`main`
 - 当前阶段：Day 02 已完成，待开始 Day 03
-- 最近完成提交：`3f9537a feat: complete day one local diff reviewer`
+- 最近完成阶段：Day 02 AI Provider 与结构化审查
 - 隐私要求：不得使用公司代码、业务名称、内部域名、接口地址、凭据或其他敏感信息；样例只使用虚构内容或公开开源内容。
 
 ## 五天目标
@@ -191,3 +191,4 @@ pnpm dev
 ## Git 注意事项
 
 - 提交前确认 `git status`，不得提交 `.env`、API Key、原始公司 Diff、内部地址、`node_modules`、`.pnpm-store` 或构建产物。
+- 使用仓库级 Git 身份配置，避免修改或依赖全局 Git 配置。
