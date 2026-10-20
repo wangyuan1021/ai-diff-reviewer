@@ -1,17 +1,34 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { ApiError, LocalReviewResult, RiskSeverity } from '@ai-diff-reviewer/shared'
+import type {
+  AIProviderName,
+  AIReviewResult,
+  ApiError,
+  LocalReviewResult,
+  RiskSeverity,
+} from '@ai-diff-reviewer/shared'
 import { sampleDiff } from './sample'
+
+type ReviewMode = 'local' | AIProviderName
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 const diff = ref(sampleDiff)
-const result = ref<LocalReviewResult | null>(null)
+const result = ref<LocalReviewResult | AIReviewResult | null>(null)
 const errorMessage = ref('')
 const isLoading = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const reviewMode = ref<ReviewMode>('mock')
 
 const lineCount = computed(() => (diff.value ? diff.value.split('\n').length : 0))
 const byteCount = computed(() => new Blob([diff.value]).size)
+const isAIResult = computed((): boolean => Boolean(result.value && 'ai' in result.value))
+
+const modeText: Record<ReviewMode, string> = {
+  local: '本地规则',
+  mock: 'Mock AI',
+  'openai-compatible': 'OpenAI-compatible',
+  ollama: 'Ollama',
+}
 
 const severityText: Record<RiskSeverity, string> = {
   low: '低',
@@ -31,16 +48,20 @@ async function analyze() {
   result.value = null
 
   try {
-    const response = await fetch(`${apiBaseUrl}/api/reviews/local`, {
+    const useAI = reviewMode.value !== 'local'
+    const response = await fetch(`${apiBaseUrl}/api/reviews/${useAI ? 'ai' : 'local'}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diff: diff.value }),
+      body: JSON.stringify({
+        diff: diff.value,
+        ...(useAI ? { provider: reviewMode.value } : {}),
+      }),
     })
-    const body = (await response.json()) as LocalReviewResult | ApiError
+    const body = (await response.json()) as LocalReviewResult | AIReviewResult | ApiError
     if (!response.ok) {
       throw new Error('error' in body ? body.error.message : '分析失败，请稍后重试。')
     }
-    result.value = body as LocalReviewResult
+    result.value = body as LocalReviewResult | AIReviewResult
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '分析失败，请稍后重试。'
   } finally {
@@ -83,14 +104,14 @@ function resetSample() {
         <span class="brand-mark">DR</span>
         <span>AI Diff Reviewer</span>
       </a>
-      <div class="privacy-badge"><span></span> 本地规则模式 · 原始 Diff 不落库</div>
+      <div class="privacy-badge"><span></span> 隐私优先 · 原始 Diff 不落库</div>
     </header>
 
     <main id="top">
       <section class="hero">
         <div class="eyebrow">EXPLAINABLE CODE REVIEW</div>
         <h1>让每一次代码变更<br /><em>都有证据可循</em></h1>
-        <p>解析 Git Diff，定位文件与行号，通过本地规则发现安全、兼容性和测试风险。</p>
+        <p>解析 Git Diff，结合本地规则与可替换 AI Provider，给出可验证的风险证据。</p>
       </section>
 
       <section class="workspace" aria-labelledby="workspace-title">
@@ -131,7 +152,18 @@ function resetSample() {
         <div v-if="errorMessage" class="alert" role="alert">{{ errorMessage }}</div>
 
         <div class="analyze-row">
-          <p>当前阶段只运行本地静态规则，不会向外部模型发送代码。</p>
+          <div class="mode-control">
+            <label for="review-mode">审查模式</label>
+            <select id="review-mode" v-model="reviewMode" :disabled="isLoading">
+              <option value="local">本地规则（不调用模型）</option>
+              <option value="mock">Mock AI（无需 API Key）</option>
+              <option value="openai-compatible">OpenAI-compatible</option>
+              <option value="ollama">Ollama（本地服务）</option>
+            </select>
+            <p v-if="reviewMode === 'local'">Diff 仅在本机 API 中执行静态规则。</p>
+            <p v-else-if="reviewMode === 'mock'">确定性演示响应，不会发送到外部服务。</p>
+            <p v-else>Diff 分块将发送至服务端环境变量配置的 Provider。</p>
+          </div>
           <button
             class="button button-primary"
             type="button"
@@ -139,7 +171,7 @@ function resetSample() {
             @click="analyze"
           >
             <span v-if="isLoading" class="spinner"></span>
-            {{ isLoading ? '正在分析' : '开始风险分析' }}
+            {{ isLoading ? '正在分析' : `使用${modeText[reviewMode]}分析` }}
           </button>
         </div>
       </section>
@@ -176,6 +208,34 @@ function resetSample() {
           </article>
         </div>
 
+        <div v-if="isAIResult && result && 'ai' in result" class="ai-metadata">
+          <div>
+            <span>Provider</span>
+            <strong>{{ result.ai.provider }}</strong>
+          </div>
+          <div>
+            <span>模型</span>
+            <strong>{{ result.ai.model }}</strong>
+          </div>
+          <div>
+            <span>耗时 / 置信度</span>
+            <strong
+              >{{ result.ai.durationMs }}ms · {{ Math.round(result.ai.confidence * 100) }}%</strong
+            >
+          </div>
+          <div>
+            <span>AI 覆盖</span>
+            <strong>
+              {{ result.ai.coverage.reviewedChunks }}/{{ result.ai.coverage.totalChunks }} 分块
+              <em v-if="result.ai.coverage.truncated">有截断</em>
+            </strong>
+          </div>
+        </div>
+
+        <div v-if="result.warnings.length" class="warning-list" role="status">
+          <p v-for="warning in result.warnings" :key="warning">{{ warning }}</p>
+        </div>
+
         <div class="result-grid">
           <div class="risk-list">
             <div class="block-title">
@@ -187,7 +247,12 @@ function resetSample() {
                 <span :class="['severity-pill', `pill-${risk.severity}`]">
                   {{ severityText[risk.severity] }}风险
                 </span>
-                <code>{{ risk.ruleId }}</code>
+                <div class="risk-origin">
+                  <span>{{
+                    risk.source === 'combined' ? '本地 + AI' : risk.source === 'ai' ? 'AI' : '本地'
+                  }}</span>
+                  <code>{{ risk.ruleId }}</code>
+                </div>
               </div>
               <h4>{{ risk.title }}</h4>
               <div class="location">
@@ -240,6 +305,6 @@ function resetSample() {
       </section>
     </main>
 
-    <footer>DAY 01 · LOCAL RULE ENGINE · NO AI REQUIRED</footer>
+    <footer>DAY 02 · EVIDENCE-BASED AI REVIEW · MOCK / OPENAI-COMPATIBLE / OLLAMA</footer>
   </div>
 </template>

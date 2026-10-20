@@ -1,4 +1,10 @@
 export { DiffValidationError } from './errors'
+export {
+  createReviewChunkPlan,
+  type ChunkDiffOptions,
+  type ReviewChunk,
+  type ReviewChunkPlan,
+} from './chunker'
 export { parseUnifiedDiff, type ParseDiffOptions } from './parser'
 export { runLocalRules } from './rules'
 

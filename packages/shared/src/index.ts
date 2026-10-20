@@ -54,6 +54,8 @@ export type RiskCategory =
   | 'configuration'
   | 'dependency'
 
+export type ReviewRiskSource = 'local-rule' | 'ai'
+
 export interface ReviewRisk {
   id: string
   severity: RiskSeverity
@@ -64,7 +66,8 @@ export interface ReviewRisk {
   evidence: string
   impact: string
   suggestion: string
-  source: 'local-rule' | 'ai'
+  source: ReviewRiskSource | 'combined'
+  sources: ReviewRiskSource[]
   ruleId: string
 }
 
@@ -79,6 +82,70 @@ export interface LocalReviewResult {
   warnings: string[]
   analyzedAt: string
 }
+
+export type AIProviderName = 'mock' | 'openai-compatible' | 'ollama'
+
+export interface AIRisk {
+  severity: RiskSeverity
+  category: RiskCategory
+  title: string
+  file: string
+  line: number
+  evidence: string
+  impact: string
+  suggestion: string
+}
+
+export interface AIModelOutput {
+  summary: string
+  overallRisk: RiskSeverity
+  confidence: number
+  risks: AIRisk[]
+  testSuggestions: string[]
+  releaseChecklist: string[]
+}
+
+export interface AIProviderConfig {
+  provider: AIProviderName
+  baseUrl?: string
+  apiKey?: string
+  model?: string
+  timeoutMs: number
+}
+
+export interface AIReviewRequest {
+  diff: string
+  provider?: AIProviderName
+}
+
+export interface AIReviewCoverage {
+  truncated: boolean
+  reviewedFiles: string[]
+  skippedFiles: string[]
+  reviewedChunks: number
+  totalChunks: number
+  omittedCharacters: number
+}
+
+export interface AIReviewMetadata {
+  provider: AIProviderName
+  model: string
+  durationMs: number
+  confidence: number
+  repairAttempted: boolean
+  coverage: AIReviewCoverage
+}
+
+export interface AIReviewResult extends LocalReviewResult {
+  ai: AIReviewMetadata
+}
+
+export type AIProviderErrorCode =
+  | 'AI_PROVIDER_NOT_CONFIGURED'
+  | 'AI_PROVIDER_TIMEOUT'
+  | 'AI_PROVIDER_NETWORK_ERROR'
+  | 'AI_PROVIDER_REQUEST_FAILED'
+  | 'AI_RESPONSE_INVALID'
 
 export interface ApiError {
   error: {

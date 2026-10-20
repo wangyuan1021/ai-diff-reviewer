@@ -30,7 +30,8 @@ body {
   min-height: 100vh;
 }
 button,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 button {
@@ -261,6 +262,25 @@ textarea::placeholder {
   font-size: 12px;
   margin: 0;
 }
+.mode-control {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 320px);
+  align-items: center;
+  gap: 7px 12px;
+}
+.mode-control label {
+  font-size: 12px;
+  font-weight: 800;
+}
+.mode-control select {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 34px 10px 12px;
+}
+.mode-control p {
+  grid-column: 1 / -1;
+}
 .alert {
   border: 1px solid #e3aaa0;
   background: #fff1ed;
@@ -327,6 +347,49 @@ textarea::placeholder {
 .metrics .changes {
   font-size: 22px;
 }
+.ai-metadata {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: -18px 0 30px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.ai-metadata div {
+  min-width: 0;
+  padding: 13px 15px;
+  background: #eeeee7;
+}
+.ai-metadata span,
+.ai-metadata strong {
+  display: block;
+}
+.ai-metadata span {
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+.ai-metadata strong {
+  overflow-wrap: anywhere;
+  font:
+    500 11px 'DM Mono',
+    monospace;
+}
+.ai-metadata em {
+  color: var(--red);
+  font-style: normal;
+}
+.warning-list {
+  border: 1px solid #dec984;
+  background: #fff8dc;
+  color: #6f570b;
+  padding: 10px 14px;
+  margin: -16px 0 30px;
+  font-size: 12px;
+}
+.warning-list p {
+  margin: 4px 0;
+}
 .severity-low {
   color: var(--green);
 }
@@ -369,6 +432,18 @@ textarea::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.risk-origin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.risk-origin span {
+  border: 1px solid var(--line);
+  padding: 3px 6px;
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
 }
 .risk-card code,
 .file-list code {
@@ -535,6 +610,15 @@ footer {
   }
   .metrics {
     grid-template-columns: 1fr 1fr;
+  }
+  .ai-metadata {
+    grid-template-columns: 1fr 1fr;
+  }
+  .mode-control {
+    grid-template-columns: 1fr;
+  }
+  .mode-control p {
+    grid-column: auto;
   }
   .metrics article:nth-child(2) {
     border-right: 0;

@@ -8,7 +8,7 @@
 - 项目路径：仓库根目录
 - GitHub 仓库：以当前项目的 `origin` remote 为准
 - 当前分支：`main`
-- 当前阶段：Day 01 已完成，待开始 Day 02
+- 当前阶段：Day 02 已完成，待开始 Day 03
 - 最近完成提交：`3f9537a feat: complete day one local diff reviewer`
 - 隐私要求：不得使用公司代码、业务名称、内部域名、接口地址、凭据或其他敏感信息；样例只使用虚构内容或公开开源内容。
 
@@ -113,59 +113,71 @@ pnpm dev
 7. 模型配置只从环境变量读取，不进入 Git、数据库或普通日志。
 8. 五天 MVP 不接 GitHub App，不自动向 Pull Request 发布评论。
 
-## Day 02 执行计划
+## Day 02 完成内容
 
-目标：完成可替换的 AI Provider 和证据化结构化审查，同时保持无 API Key 也能开发、测试和演示。
+已完成可替换的 AI Provider 和证据化结构化审查，同时保持无 API Key 也能开发、测试和演示。
 
-### 1. 扩展共享数据模型
+### 共享数据模型
 
-- 定义 `AIProvider`、模型配置、审查输入、结构化输出和 Provider 错误类型。
-- 补充总体摘要、置信度、测试建议、发布检查和截断状态。
-- 为模型结果定义严格 Zod Schema，并限制枚举、文本长度和风险数量。
+- 定义 Provider、配置、模型输出、联合审查结果、覆盖状态和 Provider 错误类型。
+- 结果包含摘要、总体等级、置信度、测试建议、发布检查和截断状态。
+- 服务端使用严格 Zod Schema，限制枚举、文本长度、数组长度和最多 20 条风险。
 
-### 2. 实现 Provider 适配层
+### Provider 适配层
 
-- `MockProvider`：固定且可重复的结构化响应，用于自动化测试和无 Key 演示。
-- `OpenAICompatibleProvider`：支持可配置的 Base URL、模型和 API Key。
-- `OllamaProvider`：使用本地 Ollama HTTP API；没有本地模型时给出明确错误。
-- 配置项：`AI_PROVIDER`、`AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`、`AI_TIMEOUT_MS`。
+- `MockProvider` 提供固定、可重复且引用真实 Diff 行号的响应。
+- `OpenAICompatibleProvider` 支持可配置 Base URL、模型和 API Key，使用 Chat Completions JSON 模式。
+- `OllamaProvider` 使用本地非流式 Chat API；不可用时返回明确网络或上游错误。
+- 支持 `AI_PROVIDER`、`AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`、`AI_TIMEOUT_MS`、`AI_MAX_PROMPT_CHARACTERS`。
 
-### 3. 实现证据化 AI 审查
+### 证据化 AI 审查
 
-- Prompt 只包含必要的统计、文件列表、分块 Diff 和本地规则结果。
-- 要求返回严格 JSON，不接受 Markdown 包裹或泛泛总结。
-- 校验文件路径必须来自当前 Diff。
-- 校验新文件行号必须出现在对应新增或上下文行范围内。
-- 对格式错误允许一次修复尝试，仍失败则返回结构化错误。
-- 合并本地规则和 AI 的重复风险，保留来源信息。
+- Prompt 只包含统计、文件列表、本地规则证据和选中的 Diff 分块。
+- 只接受严格 JSON；文件必须来自当前 Diff，行号必须出现在已审查分块的新文件行范围内。
+- 不存在的文件和无效行号会被过滤并形成警告。
+- 格式错误允许一次修复尝试，仍失败则返回 `AI_RESPONSE_INVALID`。
+- 本地与 AI 重复风险会合并，并保留 `local-rule`、`ai` 或 `combined` 来源。
 
-### 4. 大 Diff 基础分块
+### 大 Diff 基础分块
 
-- 按文件与 hunk 生成审查分块。
-- 配置、依赖、权限和迁移文件优先。
-- 超过预算时明确标记未审查部分，禁止静默丢弃。
-- Day 02 先完成非流式调用；SSE、取消和超时任务状态归 Day 03。
+- 已按文件与 hunk 生成分块，单个超大 hunk 会继续按行切分。
+- 配置、依赖、权限和迁移文件优先进入预算。
+- 超预算会返回已审查/总分块、已审查/跳过文件和省略字符数，页面明确显示截断。
+- 当前保持非流式请求；SSE、取消和任务状态归 Day 03。
 
-### 5. API 与页面
+### API 与页面
 
-- 新增 AI 审查接口，保留现有本地规则接口。
-- 页面允许选择 Mock、OpenAI-compatible 或 Ollama 模式。
-- 展示 Provider、模型、耗时、截断状态和 AI/本地规则来源。
-- Provider 未配置或响应非法时显示可理解错误，不导致服务崩溃。
+- 新增 `POST /api/reviews/ai`，保留 `POST /api/reviews/local`。
+- 页面可选择本地规则、Mock、OpenAI-compatible 或 Ollama。
+- 页面展示 Provider、模型、耗时、置信度、覆盖/截断状态和风险来源。
+- Provider 未配置、超时、网络错误、上游错误和响应非法均为可理解的结构化错误。
 
-## Day 02 验收标准
+## Day 02 验证证据
 
-- Mock 模式无需 API Key，可以从页面完成一次结构化 AI 审查。
-- 至少一种真实 Provider 的实现完成；没有可用凭据时用 HTTP Mock 测试请求协议。
-- AI 风险均包含等级、类别、文件、证据、影响、建议和来源。
-- 不存在的文件路径和无效行号会被拒绝或过滤。
-- 模型非法 JSON、Schema 错误、超时和网络失败均有自动化测试。
-- 普通日志中不出现 API Key 或完整原始 Diff。
-- `pnpm check` 全部通过。
+- TypeScript：4 个 workspace 包通过。
+- Vitest/Supertest：6 个测试文件、24 项测试全部通过。
+- 覆盖 OpenAI-compatible 与 Ollama 请求协议、缺少配置、网络失败、超时、非法 JSON、Schema 错误、一次修复、伪造文件、无效行号和截断状态。
+- ESLint、4 个 workspace 包 TypeScript 检查、服务端与 Web 生产构建全部通过。
+- 浏览器实测：Mock 模式分析虚构样例，展示 6 条本地风险、1 条 AI 风险、2/2 分块覆盖，控制台无 error 或 warning。
+
+## Day 02 验收结果
+
+- [x] Mock 模式无需 API Key，可从页面完成结构化 AI 审查。
+- [x] OpenAI-compatible 与 Ollama 均已实现并有 HTTP 协议 Mock 测试。
+- [x] AI 风险包含等级、类别、文件、行号、证据、影响、建议和来源。
+- [x] 不存在的文件路径和无效行号会被过滤并报告。
+- [x] 非法 JSON、Schema 错误、超时和网络失败均有自动化测试。
+- [x] 普通日志不记录 API Key 或完整原始 Diff。
+- [x] `pnpm check` 全部通过。
+
+## Day 03 起点
+
+- 引入异步审查任务状态，支持 SSE 进度、客户端取消和端到端超时。
+- 使用 SQLite 保存 Diff 哈希、统计、结构化结果和 Provider 元数据，不保存原始 Diff。
+- 增加历史列表、详情和 Markdown 导出。
 
 ## 后续范围
 
-- Day 03：SSE、任务状态、取消、超时、SQLite 历史记录、Markdown 导出。
 - Day 04：敏感信息检测与脱敏、10～20 个可重复评测样本、评测报告。
 - Day 05：补齐测试、Docker、GitHub Actions、架构图、截图和作品说明。
 
@@ -173,7 +185,7 @@ pnpm dev
 
 ```text
 继续开发当前 AI Diff Reviewer 仓库。
-请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试，然后按 Day 02 计划完成 AI Provider、结构化输出校验和证据化审查。不要使用或引入任何公司代码和敏感信息。
+请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试，然后按 Day 03 计划完成 SSE、取消、任务状态、SQLite 历史记录和 Markdown 导出。不要使用或引入任何公司代码和敏感信息。
 ```
 
 ## Git 注意事项

@@ -51,7 +51,12 @@ export function runLocalRules(parsed: ParsedDiff): LocalReviewResult {
 
   const addRisk = (risk: RiskInput) => {
     sequence += 1
-    risks.push({ ...risk, id: `local-${sequence}`, source: 'local-rule' })
+    risks.push({
+      ...risk,
+      id: `local-${sequence}`,
+      source: 'local-rule',
+      sources: ['local-rule'],
+    })
   }
 
   for (const file of parsed.files) {

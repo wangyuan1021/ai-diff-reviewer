@@ -33,6 +33,26 @@ describe('server API', () => {
     ).toBe(true)
   })
 
+  it('returns an AI review with the keyless mock provider', async () => {
+    const response = await request(createApp().callback())
+      .post('/api/reviews/ai')
+      .send({ diff: validDiff, provider: 'mock' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.ai.provider).toBe('mock')
+    expect(response.body.ai.confidence).toBe(0.88)
+    expect(response.body.risks.some((risk: { source: string }) => risk.source === 'ai')).toBe(true)
+  })
+
+  it('returns a clear error when OpenAI-compatible is not configured', async () => {
+    const response = await request(createApp().callback())
+      .post('/api/reviews/ai')
+      .send({ diff: validDiff, provider: 'openai-compatible' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error.code).toBe('AI_PROVIDER_NOT_CONFIGURED')
+  })
+
   it('rejects invalid content', async () => {
     const response = await request(createApp().callback())
       .post('/api/reviews/local')
