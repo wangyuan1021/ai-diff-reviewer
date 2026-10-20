@@ -1,0 +1,25 @@
+export const sampleDiff = `diff --git a/src/auth/permission.ts b/src/auth/permission.ts
+index 4f8c12a..a714aec 100644
+--- a/src/auth/permission.ts
++++ b/src/auth/permission.ts
+@@ -8,6 +8,4 @@ export async function canEditProject(user: User, project: Project) {
+-  try {
+-    return user.id === project.ownerId || user.role === 'admin'
+-  } catch (error) {
+-    return false
+-  }
++  console.log('checking permission', user)
++  // TODO: add team permission check later
++  return user.role === 'admin'
+ }
+
+diff --git a/package.json b/package.json
+index 74c524a..9d6c840 100644
+--- a/package.json
++++ b/package.json
+@@ -12,3 +12,4 @@
+   "dependencies": {
++    "example-sdk": "^2.0.0",
+     "vue": "^3.5.0"
+   }
+`
