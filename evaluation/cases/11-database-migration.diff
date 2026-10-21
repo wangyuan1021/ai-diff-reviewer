@@ -1,0 +1,6 @@
+diff --git a/database/migrations/001_add_index.sql b/database/migrations/001_add_index.sql
+new file mode 100644
+--- /dev/null
++++ b/database/migrations/001_add_index.sql
+@@ -0,0 +1 @@
++CREATE INDEX demo_items_created_at_idx ON demo_items (created_at);

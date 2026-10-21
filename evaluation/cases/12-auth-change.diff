@@ -1,0 +1,6 @@
+diff --git a/src/auth/policy.ts b/src/auth/policy.ts
+--- a/src/auth/policy.ts
++++ b/src/auth/policy.ts
+@@ -1 +1,2 @@
+ export const canRead = () => true
++export const canWrite = (role: string) => role !== 'guest'

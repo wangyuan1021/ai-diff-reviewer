@@ -1,6 +1,8 @@
 import {
   createReviewChunkPlan,
   parseUnifiedDiff,
+  redactParsedDiff,
+  redactSensitiveText,
   runLocalRules,
   type ReviewChunk,
 } from '@ai-diff-reviewer/diff-engine'
@@ -31,9 +33,10 @@ function buildMessages(
   parsed: ParsedDiff,
   chunks: ReviewChunk[],
   localRisks: ReviewRisk[],
+  fileAliases: Map<string, string>,
 ): ProviderMessage[] {
   const fileList = parsed.files.map((file) => ({
-    path: file.path,
+    path: fileAliases.get(file.path),
     changeType: file.changeType,
     additions: file.additions,
     deletions: file.deletions,
@@ -42,9 +45,9 @@ function buildMessages(
     severity: risk.severity,
     category: risk.category,
     title: risk.title,
-    file: risk.file,
+    file: fileAliases.get(risk.file),
     line: risk.line,
-    evidence: risk.evidence,
+    evidence: redactSensitiveText(risk.evidence).value,
   }))
   const userPrompt = [
     `统计：${JSON.stringify(parsed.statistics)}`,
@@ -57,6 +60,24 @@ function buildMessages(
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: userPrompt },
   ]
+}
+
+function aliasFiles(parsed: ParsedDiff): Map<string, string> {
+  return new Map(
+    parsed.files.map((file, index) => [file.path, `FILE_${String(index + 1).padStart(3, '0')}`]),
+  )
+}
+
+function aliasChunks(chunks: ReviewChunk[], aliases: Map<string, string>): ReviewChunk[] {
+  return chunks.map((chunk, index) => {
+    const alias = aliases.get(chunk.file) ?? `FILE_${String(index + 1).padStart(3, '0')}`
+    return {
+      ...chunk,
+      id: `CHUNK_${String(index + 1).padStart(3, '0')}`,
+      file: alias,
+      content: chunk.content.replace(`FILE ${chunk.file} (`, `FILE ${alias} (`),
+    }
+  })
 }
 
 function parseModelOutput(content: string): AIModelOutput | null {
@@ -148,9 +169,13 @@ export async function reviewDiffWithAI(
   options.signal?.throwIfAborted()
   options.onProgress?.('local-review', 30)
   const local = runLocalRules(parsed)
-  const plan = createReviewChunkPlan(parsed, {
+  const redacted = redactParsedDiff(parsed)
+  const fileAliases = aliasFiles(parsed)
+  const aliasToFile = new Map([...fileAliases].map(([file, alias]) => [alias, file]))
+  const plan = createReviewChunkPlan(redacted.parsed, {
     maxPromptCharacters: options.maxPromptCharacters,
   })
+  const promptChunks = aliasChunks(plan.chunks, fileAliases)
   const fallbackChunk = plan.chunks[0]
   if (!fallbackChunk) {
     return {
@@ -165,6 +190,7 @@ export async function reviewDiffWithAI(
         durationMs: Date.now() - startedAt,
         confidence: 0,
         repairAttempted: false,
+        redaction: { ...redacted.summary, filePathsAliased: false },
         coverage: {
           truncated: true,
           reviewedFiles: [],
@@ -177,17 +203,20 @@ export async function reviewDiffWithAI(
     }
   }
   const input: AICompletionInput = {
-    messages: buildMessages(parsed, plan.chunks, local.risks),
-    fallbackFile: fallbackChunk.file,
-    fallbackLine: fallbackChunk.newLines[0] ?? 1,
+    messages: buildMessages(parsed, promptChunks, local.risks, fileAliases),
+    fallbackFile: promptChunks[0]?.file ?? 'FILE_001',
+    fallbackLine: promptChunks[0]?.newLines[0] ?? 1,
     signal: options.signal,
   }
   options.signal?.throwIfAborted()
   options.onProgress?.('ai-review', 55)
   const { output, model, repairAttempted } = await getValidatedOutput(provider, input)
   options.signal?.throwIfAborted()
-  const lineMap = validLinesByFile(plan.chunks)
-  const validAIRisks = output.risks.filter((risk) => lineMap.get(risk.file)?.has(risk.line))
+  const lineMap = validLinesByFile(promptChunks)
+  const validAIRisks = output.risks.flatMap((risk) => {
+    const file = aliasToFile.get(risk.file)
+    return file && lineMap.get(risk.file)?.has(risk.line) ? [{ ...risk, file }] : []
+  })
   const rejectedCount = output.risks.length - validAIRisks.length
   const aiRisks: ReviewRisk[] = validAIRisks.map((risk, index) => ({
     ...risk,
@@ -203,6 +232,9 @@ export async function reviewDiffWithAI(
   const evidenceWarning = rejectedCount
     ? `已过滤 ${rejectedCount} 条引用不存在文件或无效新文件行号的 AI 风险。`
     : null
+  const redactionWarning = redacted.summary.findings
+    ? `发送给 AI Provider 前已脱敏 ${redacted.summary.findings} 处敏感信息，并匿名化文件路径。`
+    : '发送给 AI Provider 前已匿名化文件路径。'
 
   return {
     ...local,
@@ -215,6 +247,7 @@ export async function reviewDiffWithAI(
       ...local.warnings,
       ...(coverageWarning ? [coverageWarning] : []),
       ...(evidenceWarning ? [evidenceWarning] : []),
+      redactionWarning,
     ],
     analyzedAt: new Date().toISOString(),
     ai: {
@@ -223,6 +256,7 @@ export async function reviewDiffWithAI(
       durationMs: Date.now() - startedAt,
       confidence: output.confidence,
       repairAttempted,
+      redaction: { ...redacted.summary, filePathsAliased: true },
       coverage: {
         truncated: plan.truncated,
         reviewedFiles: plan.reviewedFiles,

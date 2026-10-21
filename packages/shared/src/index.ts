@@ -42,6 +42,23 @@ export interface ParsedDiff {
   warnings: string[]
 }
 
+export type SensitiveDataKind =
+  | 'credential'
+  | 'authorization-token'
+  | 'private-key'
+  | 'connection-string'
+  | 'email-address'
+  | 'private-ip-address'
+
+export interface SensitiveDataFinding {
+  kind: SensitiveDataKind
+}
+
+export interface SensitiveDataSummary {
+  findings: number
+  types: SensitiveDataKind[]
+}
+
 export type RiskSeverity = 'low' | 'medium' | 'high' | 'critical'
 
 export type RiskCategory =
@@ -133,6 +150,7 @@ export interface AIReviewMetadata {
   durationMs: number
   confidence: number
   repairAttempted: boolean
+  redaction: SensitiveDataSummary & { filePathsAliased: boolean }
   coverage: AIReviewCoverage
 }
 

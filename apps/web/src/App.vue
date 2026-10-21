@@ -267,7 +267,7 @@ function resetSample() {
             </select>
             <p v-if="reviewMode === 'local'">Diff 仅在本机 API 中执行静态规则。</p>
             <p v-else-if="reviewMode === 'mock'">确定性演示响应，不会发送到外部服务。</p>
-            <p v-else>Diff 分块将发送至服务端环境变量配置的 Provider。</p>
+            <p v-else>匿名路径与脱敏后的 Diff 分块将发送至服务端配置的 Provider。</p>
           </div>
           <div class="review-actions">
             <button v-if="isLoading" class="button button-danger" type="button" @click="cancelTask">
@@ -386,6 +386,13 @@ function resetSample() {
               <em v-if="result.ai.coverage.truncated">有截断</em>
             </strong>
           </div>
+          <div>
+            <span>Prompt 隐私</span>
+            <strong v-if="result.ai.redaction">
+              路径已匿名化 · {{ result.ai.redaction.findings }} 处脱敏
+            </strong>
+            <strong v-else>历史记录无脱敏元数据</strong>
+          </div>
         </div>
 
         <div v-if="result.warnings.length" class="warning-list" role="status">
@@ -461,6 +468,6 @@ function resetSample() {
       </section>
     </main>
 
-    <footer>DAY 03 · STREAMING TASKS · PRIVATE HISTORY · MARKDOWN EXPORT</footer>
+    <footer>DAY 04 · PROMPT REDACTION · REPEATABLE EVALUATION · PRIVATE HISTORY</footer>
   </div>
 </template>

@@ -1,0 +1,6 @@
+diff --git a/src/support.ts b/src/support.ts
+--- a/src/support.ts
++++ b/src/support.ts
+@@ -1 +1,2 @@
+ export const queue = 'help'
++export const owner = 'demo.owner@example.test'

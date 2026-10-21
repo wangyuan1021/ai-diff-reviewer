@@ -1,0 +1,8 @@
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -1,3 +1,4 @@
+ {
++  "example-library": "1.0.0",
+   "private": true
+ }

@@ -1,0 +1,6 @@
+diff --git a/src/request.ts b/src/request.ts
+--- a/src/request.ts
++++ b/src/request.ts
+@@ -1 +1,2 @@
+ export const headers = {}
++headers.authorization = 'Bearer fictional-token-123456789'

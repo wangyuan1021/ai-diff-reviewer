@@ -1,0 +1,8 @@
+diff --git a/fixtures/demo-key.pem b/fixtures/demo-key.pem
+new file mode 100644
+--- /dev/null
++++ b/fixtures/demo-key.pem
+@@ -0,0 +1,3 @@
++-----BEGIN PRIVATE KEY-----
++RklDVElPTkFMLUVWQUxVQVRJT04tT05MWQ==
++-----END PRIVATE KEY-----

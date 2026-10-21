@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "eval": "node --import tsx ../../scripts/evaluate.ts",
     "build": "tsup --config tsup.config.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json"

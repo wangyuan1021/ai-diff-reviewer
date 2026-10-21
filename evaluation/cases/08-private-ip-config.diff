@@ -1,0 +1,6 @@
+diff --git a/config/service.yaml b/config/service.yaml
+--- a/config/service.yaml
++++ b/config/service.yaml
+@@ -1 +1,2 @@
+ port: 8080
++host: 192.168.24.18

@@ -1,0 +1,7 @@
+diff --git a/src/loader.ts b/src/loader.ts
+--- a/src/loader.ts
++++ b/src/loader.ts
+@@ -1,3 +1 @@
+ export async function load() {
+-  try { return await fetch('/demo') }
+-  catch { return null }

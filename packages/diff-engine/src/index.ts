@@ -7,6 +7,7 @@ export {
 } from './chunker'
 export { parseUnifiedDiff, type ParseDiffOptions } from './parser'
 export { runLocalRules } from './rules'
+export { redactParsedDiff, redactSensitiveText, summarizeSensitiveFindings } from './sensitive'
 
 import type { LocalReviewResult } from '@ai-diff-reviewer/shared'
 import { parseUnifiedDiff, type ParseDiffOptions } from './parser'

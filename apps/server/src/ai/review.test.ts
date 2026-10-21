@@ -23,7 +23,7 @@ function output(overrides: Partial<AIModelOutput> = {}): AIModelOutput {
         severity: 'medium',
         category: 'correctness',
         title: '权限分支需要更多验证',
-        file: 'src/access.ts',
+        file: 'FILE_001',
         line: 2,
         evidence: '新增行输出角色信息。',
         impact: '可能暴露不必要的信息。',
@@ -64,7 +64,8 @@ describe('reviewDiffWithAI', () => {
     expect(result.ai.confidence).toBe(0.8)
     expect(result.risks.some((risk) => risk.source === 'ai')).toBe(true)
     expect(result.risks.every((risk) => risk.sources.length > 0)).toBe(true)
-    expect(provider.calls[0]?.messages[1]?.content).toContain('FILE src/access.ts')
+    expect(provider.calls[0]?.messages[1]?.content).toContain('FILE FILE_001')
+    expect(provider.calls[0]?.messages[1]?.content).not.toContain('src/access.ts')
   })
 
   it('only merges risks that describe the same issue', async () => {
@@ -74,7 +75,7 @@ describe('reviewDiffWithAI', () => {
           severity: 'low',
           category: 'maintainability',
           title: '新增调试输出',
-          file: 'src/access.ts',
+          file: 'FILE_001',
           line: 2,
           evidence: 'AI 也识别到新增调试输出。',
           impact: '可能记录不必要的信息。',
@@ -111,6 +112,36 @@ describe('reviewDiffWithAI', () => {
 
     expect(result.risks.some((risk) => risk.source === 'ai')).toBe(false)
     expect(result.warnings).toContain('已过滤 2 条引用不存在文件或无效新文件行号的 AI 风险。')
+  })
+
+  it('redacts secrets and private identifiers before calling a provider', async () => {
+    const sensitiveDiff = `diff --git a/src/internal/client.ts b/src/internal/client.ts
+--- a/src/internal/client.ts
++++ b/src/internal/client.ts
+@@ -0,0 +1,3 @@
++const password = "fictional-secret-value"
++const owner = "demo.person@example.test"
++const host = "192.168.10.24"
+`
+    const provider = new SequenceProvider([JSON.stringify(output({ risks: [] }))])
+
+    const result = await reviewDiffWithAI(sensitiveDiff, provider, options)
+    const prompt = provider.calls[0]?.messages.map((message) => message.content).join('\n') ?? ''
+
+    expect(prompt).not.toContain('fictional-secret-value')
+    expect(prompt).not.toContain('demo.person@example.test')
+    expect(prompt).not.toContain('192.168.10.24')
+    expect(prompt).not.toContain('src/internal/client.ts')
+    expect(prompt).toContain('[REDACTED:CREDENTIAL]')
+    expect(prompt).toContain('[REDACTED:EMAIL]')
+    expect(prompt).toContain('[REDACTED:PRIVATE_IP]')
+    expect(result.ai.redaction).toEqual({
+      findings: 3,
+      types: ['credential', 'email-address', 'private-ip-address'],
+      filePathsAliased: true,
+    })
+    expect(result.risks.some((risk) => risk.ruleId === 'hardcoded-secret')).toBe(true)
+    expect(result.risks.some((risk) => risk.ruleId === 'sensitive-personal-data')).toBe(true)
   })
 
   it('repairs one invalid response', async () => {

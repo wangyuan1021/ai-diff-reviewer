@@ -1,0 +1,189 @@
+{
+  "summary": {
+    "cases": 16,
+    "passedCases": 16,
+    "expectedRuleCount": 26,
+    "matchedRuleCount": 26,
+    "expectedSensitiveCount": 7,
+    "matchedSensitiveCount": 7,
+    "unexpectedRuleCount": 0
+  },
+  "results": [
+    {
+      "id": "01-clean-docs",
+      "expectedRuleIds": [],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": [],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "02-dynamic-execution",
+      "expectedRuleIds": ["dynamic-code-execution", "missing-test-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["dynamic-code-execution", "missing-test-change"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "03-hardcoded-credential",
+      "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "expectedSensitiveTypes": ["credential"],
+      "actualRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "actualSensitiveTypes": ["credential"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "04-bearer-token",
+      "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "expectedSensitiveTypes": ["authorization-token"],
+      "actualRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "actualSensitiveTypes": ["authorization-token"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "05-private-key",
+      "expectedRuleIds": ["hardcoded-secret"],
+      "expectedSensitiveTypes": ["private-key"],
+      "actualRuleIds": ["hardcoded-secret"],
+      "actualSensitiveTypes": ["private-key"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "06-connection-string",
+      "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "expectedSensitiveTypes": ["connection-string"],
+      "actualRuleIds": ["hardcoded-secret", "missing-test-change"],
+      "actualSensitiveTypes": ["connection-string"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "07-email-address",
+      "expectedRuleIds": ["sensitive-personal-data", "missing-test-change"],
+      "expectedSensitiveTypes": ["email-address"],
+      "actualRuleIds": ["missing-test-change", "sensitive-personal-data"],
+      "actualSensitiveTypes": ["email-address"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "08-private-ip-config",
+      "expectedRuleIds": ["configuration-change", "sensitive-personal-data"],
+      "expectedSensitiveTypes": ["private-ip-address"],
+      "actualRuleIds": ["configuration-change", "sensitive-personal-data"],
+      "actualSensitiveTypes": ["private-ip-address"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "09-dependency-change",
+      "expectedRuleIds": ["dependency-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["dependency-change"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "10-secret-config",
+      "expectedRuleIds": ["configuration-change", "hardcoded-secret"],
+      "expectedSensitiveTypes": ["credential"],
+      "actualRuleIds": ["configuration-change", "hardcoded-secret"],
+      "actualSensitiveTypes": ["credential"],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "11-database-migration",
+      "expectedRuleIds": ["database-migration"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["database-migration"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "12-auth-change",
+      "expectedRuleIds": ["auth-change", "missing-test-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["auth-change", "missing-test-change"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "13-public-api-change",
+      "expectedRuleIds": ["public-api-change", "missing-test-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["missing-test-change", "public-api-change"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "14-quality-markers",
+      "expectedRuleIds": ["unfinished-marker", "debug-output", "missing-test-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["debug-output", "missing-test-change", "unfinished-marker"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "15-removed-error-handling",
+      "expectedRuleIds": ["removed-error-handling", "missing-test-change"],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": ["missing-test-change", "removed-error-handling"],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    },
+    {
+      "id": "16-source-with-tests",
+      "expectedRuleIds": [],
+      "expectedSensitiveTypes": [],
+      "actualRuleIds": [],
+      "actualSensitiveTypes": [],
+      "missingRuleIds": [],
+      "unexpectedRuleIds": [],
+      "missingSensitiveTypes": [],
+      "passed": true
+    }
+  ]
+}

@@ -491,7 +491,7 @@ textarea::placeholder {
 }
 .ai-metadata {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1px;
   margin: -18px 0 30px;
   background: var(--line);

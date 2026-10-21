@@ -1,0 +1,6 @@
+diff --git a/src/storage.ts b/src/storage.ts
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -1 +1,2 @@
+ export const poolSize = 4
++export const databaseUrl = 'postgres://demo:fictional-pass@db.example.test/app'

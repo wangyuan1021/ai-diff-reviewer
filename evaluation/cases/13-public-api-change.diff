@@ -1,0 +1,6 @@
+diff --git a/src/api/types.ts b/src/api/types.ts
+--- a/src/api/types.ts
++++ b/src/api/types.ts
+@@ -1 +1,2 @@
+ export interface Item { id: string }
++export interface ItemResponse { item: Item; cached: boolean }

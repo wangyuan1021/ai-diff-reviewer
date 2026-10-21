@@ -1,0 +1,6 @@
+diff --git a/src/template.ts b/src/template.ts
+--- a/src/template.ts
++++ b/src/template.ts
+@@ -1 +1,2 @@
+ export function render(input: string) {
++  return eval(input)

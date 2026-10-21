@@ -6,6 +6,7 @@ import type {
   RiskCategory,
   RiskSeverity,
 } from '@ai-diff-reviewer/shared'
+import { redactSensitiveText } from './sensitive'
 
 interface RiskInput {
   severity: RiskSeverity
@@ -28,6 +29,12 @@ const MIGRATION_PATTERN = /(^|\/)(migrations?|database\/migrations?)(\/|$)/i
 const AUTH_PATH_PATTERN =
   /(^|\/)(auth|authentication|authorization|permission|permissions|rbac|acl)(\/|\.|$)/i
 const PUBLIC_API_PATTERN = /(^|\/)(api|routes?|types?|index)(\/|\.|$)|\.d\.ts$/i
+const SECRET_KINDS = new Set([
+  'credential',
+  'authorization-token',
+  'private-key',
+  'connection-string',
+])
 
 function addedLines(file: ChangedFile) {
   return file.hunks.flatMap((hunk) => hunk.lines.filter((line) => line.type === 'add'))
@@ -117,6 +124,8 @@ export function runLocalRules(parsed: ParsedDiff): LocalReviewResult {
 
     for (const line of added) {
       const content = line.content
+      const sensitive = redactSensitiveText(content)
+      const sensitiveKinds = new Set(sensitive.findings.map((item) => item.kind))
       if (/\beval\s*\(|new\s+Function\s*\(/.test(content)) {
         addRisk({
           severity: 'critical',
@@ -131,9 +140,7 @@ export function runLocalRules(parsed: ParsedDiff): LocalReviewResult {
         })
       }
 
-      if (
-        /(api[_-]?key|secret|token|password|passwd)\s*[:=]\s*['"][^'"${}]{8,}['"]/i.test(content)
-      ) {
+      if ([...sensitiveKinds].some((kind) => SECRET_KINDS.has(kind))) {
         addRisk({
           severity: 'critical',
           category: 'security',
@@ -144,6 +151,20 @@ export function runLocalRules(parsed: ParsedDiff): LocalReviewResult {
           impact: '敏感凭据可能随代码库、构建产物或日志泄露。',
           suggestion: '立即移除并轮换凭据，改用环境变量或密钥管理服务。',
           ruleId: 'hardcoded-secret',
+        })
+      }
+
+      if (sensitiveKinds.has('email-address') || sensitiveKinds.has('private-ip-address')) {
+        addRisk({
+          severity: 'medium',
+          category: 'security',
+          title: '疑似敏感个人或内部信息',
+          file: file.path,
+          line: line.newLine,
+          evidence: '新增行疑似包含邮箱地址或私有网络地址，内容已隐藏。',
+          impact: '敏感信息可能进入代码库、模型请求、构建产物或日志。',
+          suggestion: '确认该信息是否必要，优先使用虚构样例、配置项或脱敏占位符。',
+          ruleId: 'sensitive-personal-data',
         })
       }
 

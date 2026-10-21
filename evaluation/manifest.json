@@ -1,0 +1,74 @@
+[
+  { "id": "01-clean-docs", "expectedRuleIds": [], "expectedSensitiveTypes": [] },
+  {
+    "id": "02-dynamic-execution",
+    "expectedRuleIds": ["dynamic-code-execution", "missing-test-change"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "03-hardcoded-credential",
+    "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+    "expectedSensitiveTypes": ["credential"]
+  },
+  {
+    "id": "04-bearer-token",
+    "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+    "expectedSensitiveTypes": ["authorization-token"]
+  },
+  {
+    "id": "05-private-key",
+    "expectedRuleIds": ["hardcoded-secret"],
+    "expectedSensitiveTypes": ["private-key"]
+  },
+  {
+    "id": "06-connection-string",
+    "expectedRuleIds": ["hardcoded-secret", "missing-test-change"],
+    "expectedSensitiveTypes": ["connection-string"]
+  },
+  {
+    "id": "07-email-address",
+    "expectedRuleIds": ["sensitive-personal-data", "missing-test-change"],
+    "expectedSensitiveTypes": ["email-address"]
+  },
+  {
+    "id": "08-private-ip-config",
+    "expectedRuleIds": ["configuration-change", "sensitive-personal-data"],
+    "expectedSensitiveTypes": ["private-ip-address"]
+  },
+  {
+    "id": "09-dependency-change",
+    "expectedRuleIds": ["dependency-change"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "10-secret-config",
+    "expectedRuleIds": ["configuration-change", "hardcoded-secret"],
+    "expectedSensitiveTypes": ["credential"]
+  },
+  {
+    "id": "11-database-migration",
+    "expectedRuleIds": ["database-migration"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "12-auth-change",
+    "expectedRuleIds": ["auth-change", "missing-test-change"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "13-public-api-change",
+    "expectedRuleIds": ["public-api-change", "missing-test-change"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "14-quality-markers",
+    "expectedRuleIds": ["unfinished-marker", "debug-output", "missing-test-change"],
+    "expectedSensitiveTypes": []
+  },
+  {
+    "id": "15-removed-error-handling",
+    "expectedRuleIds": ["removed-error-handling", "missing-test-change"],
+    "expectedSensitiveTypes": []
+  },
+  { "id": "16-source-with-tests", "expectedRuleIds": [], "expectedSensitiveTypes": [] }
+]

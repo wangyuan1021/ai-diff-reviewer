@@ -1,6 +1,6 @@
 # AI Diff Reviewer
 
-一个可解释、可评测、隐私优先的 Git Diff 风险分析工具。当前 Day 03 版本支持本地规则、可替换 AI Provider、SSE 实时进度、任务取消与超时、隐私安全的 SQLite 历史和 Markdown 导出。
+一个可解释、可评测、隐私优先的 Git Diff 风险分析工具。当前 Day 04 版本支持本地规则、可替换 AI Provider、Prompt 脱敏、可重复评测、SSE 实时进度、任务取消与超时、隐私安全的 SQLite 历史和 Markdown 导出。
 
 当前开发状态、验证证据、技术决策和下一步计划见 [`docs/PROGRESS.md`](docs/PROGRESS.md)。
 
@@ -21,6 +21,8 @@
 - 支持客户端取消与全流程任务超时，取消信号会传递到外部 Provider 请求。
 - 用 SQLite 保存 Diff SHA-256、统计、脱敏后的结构化结果和 Provider 元数据，不保存原始 Diff 与 hunk。
 - 浏览历史审查详情，并导出不含原始代码的 Markdown 报告。
+- 在调用 AI Provider 前识别凭据、授权令牌、私钥、连接串、邮箱和私网 IP，以类型占位符替换敏感值并匿名化文件路径。
+- 用 16 个完全虚构的 Diff 样本确定性评测本地规则和 Prompt 脱敏，生成 Markdown 与 JSON 报告。
 
 ## 技术栈
 
@@ -50,6 +52,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm eval
 ```
 
 也可以运行全部检查：
@@ -139,9 +142,11 @@ Day 2 的同步接口继续保留，方便脚本调用和向后兼容；Web 工�
 ## 隐私边界
 
 - 本地规则和 Mock 模式不会把 Diff 发送给第三方；选择 OpenAI-compatible 会把必要分块发往已配置服务，Ollama 默认只访问本机服务。
+- 发送分块前会在本地将文件路径替换为 `FILE_001` 一类匿名标识，并将已识别的凭据、授权令牌、私钥、带账号密码连接串、邮箱和私网 IP 替换为类型占位符；AI 结果返回后再在本地恢复路径。
 - SQLite 只持久化 Diff SHA-256、统计、Provider 元数据和脱敏后的结构化结果，不保存原始 Diff、hunk 或变更代码行。
 - 实时结果仍只在当前请求和浏览器会话中返回；历史详情中的文件 hunk 已移除，结构化文本中出现的原始变更行会在写库前脱敏。
 - 普通日志不记录 API Key、完整原始 Diff 或模型请求正文。
+- 基于模式的脱敏只能降低泄露风险，不能保证识别任意格式的秘密或个人信息；发送外部 Provider 前仍需遵守数据分类和人工复核要求。
 - 风险规则不能替代人工代码审查、安全审计和完整测试。
 - 示例均为虚构代码，不包含任何公司代码、业务名称、地址或凭据。
 
@@ -150,5 +155,5 @@ Day 2 的同步接口继续保留，方便脚本调用和向后兼容；Web 工�
 - Day 01：工程基础、Diff 解析、本地规则、Web 工作台。
 - Day 02：Mock / OpenAI-compatible / Ollama Provider 与结构化 AI 审查（已完成）。
 - Day 03：SSE、取消、超时、SQLite 历史记录和 Markdown 导出（已完成）。
-- Day 04：敏感信息脱敏和可重复评测集。
+- Day 04：敏感信息脱敏和可重复评测集（已完成）。
 - Day 05：Docker、CI、完整测试、架构图与演示材料。

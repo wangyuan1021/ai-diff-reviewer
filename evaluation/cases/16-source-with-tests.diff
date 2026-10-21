@@ -1,0 +1,12 @@
+diff --git a/src/math.ts b/src/math.ts
+--- a/src/math.ts
++++ b/src/math.ts
+@@ -1 +1,2 @@
+ export const add = (left: number, right: number) => left + right
++export const twice = (value: number) => add(value, value)
+diff --git a/src/math.test.ts b/src/math.test.ts
+--- a/src/math.test.ts
++++ b/src/math.test.ts
+@@ -1 +1,2 @@
+ import { add } from './math'
++import { twice } from './math'
