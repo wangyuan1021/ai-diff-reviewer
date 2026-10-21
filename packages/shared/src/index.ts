@@ -154,3 +154,68 @@ export interface ApiError {
     details?: unknown
   }
 }
+
+export type ReviewMode = 'local' | AIProviderName
+
+export type ReviewTaskStatus =
+  'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timed-out'
+
+export type ReviewTaskStage =
+  'queued' | 'parsing' | 'local-review' | 'ai-review' | 'saving' | 'completed'
+
+export interface ReviewTaskProgress {
+  stage: ReviewTaskStage
+  percent: number
+  message: string
+}
+
+export interface ReviewTaskError {
+  code: string
+  message: string
+}
+
+export type ReviewResult = LocalReviewResult | AIReviewResult
+
+export interface ReviewTaskSnapshot {
+  id: string
+  status: ReviewTaskStatus
+  mode: ReviewMode
+  progress: ReviewTaskProgress
+  result?: ReviewResult
+  error?: ReviewTaskError
+  createdAt: string
+  startedAt?: string
+  completedAt?: string
+}
+
+export interface CreateReviewTaskRequest {
+  diff: string
+  mode?: ReviewMode
+}
+
+export interface CreateReviewTaskResponse {
+  task: ReviewTaskSnapshot
+}
+
+export interface ReviewHistorySummary {
+  id: string
+  diffHash: string
+  mode: ReviewMode
+  provider?: AIProviderName
+  model?: string
+  overallRisk: RiskSeverity
+  statistics: DiffStatistics
+  riskCount: number
+  createdAt: string
+  completedAt: string
+  durationMs: number
+}
+
+export interface ReviewHistoryDetail extends ReviewHistorySummary {
+  result: ReviewResult
+}
+
+export interface ReviewHistoryList {
+  items: ReviewHistorySummary[]
+  total: number
+}

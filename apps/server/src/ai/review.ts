@@ -18,6 +18,8 @@ import { aiModelOutputSchema } from './schemas'
 export interface AIReviewOptions {
   maxBytes: number
   maxPromptCharacters: number
+  signal?: AbortSignal
+  onProgress?: (stage: 'parsing' | 'local-review' | 'ai-review', percent: number) => void
 }
 
 const SYSTEM_PROMPT = `你是严格的 Git Diff 风险审查器。只根据用户提供的变更证据判断，不猜测未展示的代码。
@@ -140,7 +142,11 @@ export async function reviewDiffWithAI(
   options: AIReviewOptions,
 ): Promise<AIReviewResult> {
   const startedAt = Date.now()
+  options.signal?.throwIfAborted()
+  options.onProgress?.('parsing', 10)
   const parsed = parseUnifiedDiff(diff, { maxBytes: options.maxBytes })
+  options.signal?.throwIfAborted()
+  options.onProgress?.('local-review', 30)
   const local = runLocalRules(parsed)
   const plan = createReviewChunkPlan(parsed, {
     maxPromptCharacters: options.maxPromptCharacters,
@@ -174,8 +180,12 @@ export async function reviewDiffWithAI(
     messages: buildMessages(parsed, plan.chunks, local.risks),
     fallbackFile: fallbackChunk.file,
     fallbackLine: fallbackChunk.newLines[0] ?? 1,
+    signal: options.signal,
   }
+  options.signal?.throwIfAborted()
+  options.onProgress?.('ai-review', 55)
   const { output, model, repairAttempted } = await getValidatedOutput(provider, input)
+  options.signal?.throwIfAborted()
   const lineMap = validLinesByFile(plan.chunks)
   const validAIRisks = output.risks.filter((risk) => lineMap.get(risk.file)?.has(risk.line))
   const rejectedCount = output.risks.length - validAIRisks.length

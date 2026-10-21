@@ -8,8 +8,8 @@
 - 项目路径：仓库根目录
 - GitHub 仓库：以当前项目的 `origin` remote 为准
 - 当前分支：`main`
-- 当前阶段：Day 02 已完成，待开始 Day 03
-- 最近完成阶段：Day 02 AI Provider 与结构化审查
+- 当前阶段：Day 03 已完成，待开始 Day 04
+- 最近完成阶段：Day 03 异步任务、SSE 与隐私安全历史
 - 隐私要求：不得使用公司代码、业务名称、内部域名、接口地址、凭据或其他敏感信息；样例只使用虚构内容或公开开源内容。
 
 ## 五天目标
@@ -170,22 +170,60 @@ pnpm dev
 - [x] 普通日志不记录 API Key 或完整原始 Diff。
 - [x] `pnpm check` 全部通过。
 
-## Day 03 起点
+## Day 03 完成内容
 
-- 引入异步审查任务状态，支持 SSE 进度、客户端取消和端到端超时。
-- 使用 SQLite 保存 Diff 哈希、统计、结构化结果和 Provider 元数据，不保存原始 Diff。
-- 增加历史列表、详情和 Markdown 导出。
+### 异步任务与 SSE
+
+- 新增异步任务状态模型，覆盖排队、运行、完成、失败、取消和超时。
+- 新增 `POST /api/review-tasks`、任务快照、SSE 进度和取消接口。
+- 进度覆盖 Diff 解析、本地规则、AI Provider、历史保存和完成阶段。
+- 客户端取消信号贯穿至 OpenAI-compatible 与 Ollama 的 HTTP 请求。
+- `REVIEW_TASK_TIMEOUT_MS` 控制端到端任务超时，和单次 Provider 超时相互独立。
+- 终态任务默认保留 15 分钟后从内存清理，避免长期持有实时审查结果。
+- 保留 Day 02 同步 API，Web 工作台默认改用异步任务接口。
+
+### SQLite 隐私历史
+
+- 使用 Node.js 22 内置 SQLite，默认数据库为仓库根目录 `data/reviews.db`。
+- 仅保存 Diff SHA-256、统计、风险数量、Provider/模型、耗时和结构化结果。
+- 写库前移除所有文件 hunk，并对结构化文本中出现的原始变更行做脱敏。
+- 数据库及伴随文件已通过 `.gitignore` 排除，不会提交到 GitHub。
+- 新增历史列表和详情接口，支持分页读取。
+
+### Markdown 导出与页面
+
+- 新增历史 Markdown 下载接口，报告包含摘要、风险、文件统计、测试建议和发布检查。
+- Markdown 不包含原始 Diff 或 hunk 内容。
+- 页面展示实时进度条、任务 ID 和取消操作。
+- 页面增加历史列表、详情回看和 Markdown 导出入口。
+
+## Day 03 验收结果
+
+- [x] Mock、本地规则及外部 Provider 均可通过异步任务执行。
+- [x] SSE 推送任务进度和最终结果，客户端可主动取消。
+- [x] 全流程超时会终止 Provider 请求并形成明确任务状态。
+- [x] SQLite 不保存原始 Diff 或 hunk，隐私边界有自动化测试。
+- [x] 历史列表、详情和 Markdown 导出接口已实现。
+- [x] Day 02 同步接口保持兼容。
+
+## Day 03 验证证据
+
+- TypeScript：4 个 workspace 包通过。
+- 新增历史隐私、Markdown、任务完成、取消和全流程超时测试。
+- Vitest/Supertest：8 个测试文件、32 项测试全部通过，包含 SSE 端到端覆盖。
+- ESLint、4 个 workspace 包 TypeScript 检查、服务端与 Web 生产构建全部通过。
+- 浏览器实测：Mock 审查展示 2 个文件、7 项风险、2/2 分块覆盖；历史自动刷新，详情中代码证据已脱敏，控制台无 error 或 warning。
 
 ## 后续范围
 
-- Day 04：敏感信息检测与脱敏、10～20 个可重复评测样本、评测报告。
+- Day 04：敏感信息检测与 Prompt 脱敏、10～20 个可重复评测样本、评测报告。
 - Day 05：补齐测试、Docker、GitHub Actions、架构图、截图和作品说明。
 
 ## 新对话开场语
 
 ```text
 继续开发当前 AI Diff Reviewer 仓库。
-请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试，然后按 Day 03 计划完成 SSE、取消、任务状态、SQLite 历史记录和 Markdown 导出。不要使用或引入任何公司代码和敏感信息。
+请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试，然后按 Day 04 计划完成敏感信息检测与 Prompt 脱敏、可重复评测集和评测报告。不要使用或引入任何公司代码和敏感信息。
 ```
 
 ## Git 注意事项

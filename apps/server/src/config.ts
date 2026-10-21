@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import type { AIProviderName } from '@ai-diff-reviewer/shared'
 import { aiProviderNameSchema } from './ai/schemas'
 
@@ -21,4 +22,9 @@ export const config = {
   aiModel: process.env.AI_MODEL,
   aiTimeoutMs: toPositiveInteger(process.env.AI_TIMEOUT_MS, 30_000),
   aiMaxPromptCharacters: toPositiveInteger(process.env.AI_MAX_PROMPT_CHARACTERS, 60_000),
+  reviewTaskTimeoutMs: toPositiveInteger(process.env.REVIEW_TASK_TIMEOUT_MS, 60_000),
+  reviewTaskRetentionMs: toPositiveInteger(process.env.REVIEW_TASK_RETENTION_MS, 15 * 60_000),
+  databasePath:
+    process.env.DATABASE_PATH ??
+    fileURLToPath(new URL('../../../data/reviews.db', import.meta.url)),
 }

@@ -10,6 +10,7 @@ export interface AICompletionInput {
   messages: ProviderMessage[]
   fallbackFile: string
   fallbackLine: number
+  signal?: AbortSignal
 }
 
 export interface AICompletionResult {
@@ -27,9 +28,16 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
 
-async function requestJson(url: string, init: RequestInit, timeoutMs: number): Promise<unknown> {
+async function requestJson(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  parentSignal?: AbortSignal,
+): Promise<unknown> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  const abortFromParent = () => controller.abort()
+  parentSignal?.addEventListener('abort', abortFromParent, { once: true })
   try {
     const response = await fetch(url, { ...init, signal: controller.signal })
     const body = (await response.json().catch(() => null)) as unknown
@@ -58,6 +66,7 @@ async function requestJson(url: string, init: RequestInit, timeoutMs: number): P
     )
   } finally {
     clearTimeout(timeout)
+    parentSignal?.removeEventListener('abort', abortFromParent)
   }
 }
 
@@ -136,6 +145,7 @@ export class OpenAICompatibleProvider implements AIProvider {
         }),
       },
       this.timeoutMs,
+      input.signal,
     )) as OpenAIResponse
     const content = body.choices?.[0]?.message?.content
     if (typeof content !== 'string') {
@@ -181,6 +191,7 @@ export class OllamaProvider implements AIProvider {
         }),
       },
       this.timeoutMs,
+      input.signal,
     )) as OllamaResponse
     const content = body.message?.content
     if (typeof content !== 'string') {

@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type {
   AIProviderName,
   AIReviewResult,
   ApiError,
   LocalReviewResult,
   RiskSeverity,
+  ReviewHistoryDetail,
+  ReviewHistoryList,
+  ReviewHistorySummary,
+  ReviewTaskSnapshot,
 } from '@ai-diff-reviewer/shared'
 import { sampleDiff } from './sample'
 
@@ -18,10 +22,19 @@ const errorMessage = ref('')
 const isLoading = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const reviewMode = ref<ReviewMode>('mock')
+const task = ref<ReviewTaskSnapshot | null>(null)
+const history = ref<ReviewHistoryList>({ items: [], total: 0 })
+const selectedHistory = ref<ReviewHistoryDetail | null>(null)
+let eventSource: EventSource | null = null
 
 const lineCount = computed(() => (diff.value ? diff.value.split('\n').length : 0))
 const byteCount = computed(() => new Blob([diff.value]).size)
 const isAIResult = computed((): boolean => Boolean(result.value && 'ai' in result.value))
+const reportDownloadUrl = computed(() => {
+  const historyId =
+    selectedHistory.value?.id ?? (task.value?.status === 'completed' ? task.value.id : '')
+  return historyId ? `${apiBaseUrl}/api/history/${historyId}/markdown` : ''
+})
 
 const modeText: Record<ReviewMode, string> = {
   local: '本地规则',
@@ -46,28 +59,109 @@ async function analyze() {
   isLoading.value = true
   errorMessage.value = ''
   result.value = null
+  task.value = null
+  selectedHistory.value = null
+  eventSource?.close()
 
   try {
     const useAI = reviewMode.value !== 'local'
-    const response = await fetch(`${apiBaseUrl}/api/reviews/${useAI ? 'ai' : 'local'}`, {
+    const response = await fetch(`${apiBaseUrl}/api/review-tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         diff: diff.value,
-        ...(useAI ? { provider: reviewMode.value } : {}),
+        mode: useAI ? reviewMode.value : 'local',
       }),
     })
-    const body = (await response.json()) as LocalReviewResult | AIReviewResult | ApiError
+    const body = (await response.json()) as { task: ReviewTaskSnapshot } | ApiError
     if (!response.ok) {
       throw new Error('error' in body ? body.error.message : '分析失败，请稍后重试。')
     }
-    result.value = body as LocalReviewResult | AIReviewResult
+    if (!('task' in body)) throw new Error('服务返回了无法识别的任务数据。')
+    task.value = body.task
+    connectToTask(body.task.id)
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '分析失败，请稍后重试。'
-  } finally {
     isLoading.value = false
   }
 }
+
+function connectToTask(taskId: string) {
+  eventSource?.close()
+  eventSource = new EventSource(`${apiBaseUrl}/api/review-tasks/${taskId}/events`)
+  eventSource.addEventListener('task', (event) => {
+    const next = JSON.parse((event as MessageEvent).data) as ReviewTaskSnapshot
+    errorMessage.value = ''
+    task.value = next
+    if (next.status === 'completed' && next.result) {
+      result.value = next.result
+      isLoading.value = false
+      eventSource?.close()
+      void loadHistory()
+    } else if (['failed', 'cancelled', 'timed-out'].includes(next.status)) {
+      errorMessage.value = next.error?.message ?? '分析未完成。'
+      isLoading.value = false
+      eventSource?.close()
+    }
+  })
+  eventSource.onerror = () => {
+    if (
+      task.value &&
+      !['completed', 'failed', 'cancelled', 'timed-out'].includes(task.value.status)
+    ) {
+      errorMessage.value = '进度连接中断，请稍后查看任务状态。'
+    }
+  }
+}
+
+async function cancelTask() {
+  if (!task.value || !isLoading.value) return
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/review-tasks/${task.value.id}`, {
+      method: 'DELETE',
+    })
+    const body = (await response.json()) as { task: ReviewTaskSnapshot } | ApiError
+    if (!response.ok) throw new Error('error' in body ? body.error.message : '取消失败。')
+    if (!('task' in body)) throw new Error('服务返回了无法识别的任务数据。')
+    task.value = body.task
+    errorMessage.value = body.task.error?.message ?? '审查任务已取消。'
+    isLoading.value = false
+    eventSource?.close()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '取消失败。'
+  }
+}
+
+async function loadHistory() {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/history?limit=8`)
+    if (!response.ok) return
+    history.value = (await response.json()) as ReviewHistoryList
+  } catch {
+    return
+  }
+}
+
+async function openHistory(item: ReviewHistorySummary) {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/history/${item.id}`)
+    if (!response.ok) throw new Error('历史记录加载失败。')
+    const detail = (await response.json()) as ReviewHistoryDetail
+    selectedHistory.value = detail
+    result.value = detail.result
+    errorMessage.value = ''
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '历史记录加载失败。'
+  }
+}
+
+onMounted(() => {
+  void loadHistory()
+})
+
+onBeforeUnmount(() => {
+  eventSource?.close()
+})
 
 function openFilePicker() {
   fileInput.value?.click()
@@ -151,6 +245,17 @@ function resetSample() {
 
         <div v-if="errorMessage" class="alert" role="alert">{{ errorMessage }}</div>
 
+        <div v-if="isLoading && task" class="progress-card" role="status" aria-live="polite">
+          <div class="progress-copy">
+            <strong>{{ task.progress.message }}</strong>
+            <span>{{ task.progress.percent }}%</span>
+          </div>
+          <div class="progress-track">
+            <span :style="{ width: `${task.progress.percent}%` }"></span>
+          </div>
+          <code>{{ task.id }}</code>
+        </div>
+
         <div class="analyze-row">
           <div class="mode-control">
             <label for="review-mode">审查模式</label>
@@ -164,25 +269,76 @@ function resetSample() {
             <p v-else-if="reviewMode === 'mock'">确定性演示响应，不会发送到外部服务。</p>
             <p v-else>Diff 分块将发送至服务端环境变量配置的 Provider。</p>
           </div>
-          <button
-            class="button button-primary"
-            type="button"
-            :disabled="isLoading"
-            @click="analyze"
-          >
-            <span v-if="isLoading" class="spinner"></span>
-            {{ isLoading ? '正在分析' : `使用${modeText[reviewMode]}分析` }}
-          </button>
+          <div class="review-actions">
+            <button v-if="isLoading" class="button button-danger" type="button" @click="cancelTask">
+              取消任务
+            </button>
+            <button
+              class="button button-primary"
+              type="button"
+              :disabled="isLoading"
+              @click="analyze"
+            >
+              <span v-if="isLoading" class="spinner"></span>
+              {{ isLoading ? '正在分析' : `使用${modeText[reviewMode]}分析` }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="history-panel" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <span class="step">02</span>
+            <h2 id="history-title">审查历史</h2>
+          </div>
+          <span class="history-count">{{ history.total }} RECORDS · 不保存原始 Diff</span>
+        </div>
+        <div v-if="history.items.length" class="history-list">
+          <article v-for="item in history.items" :key="item.id" class="history-item">
+            <button type="button" class="history-open" @click="openHistory(item)">
+              <span :class="['severity-dot', `dot-${item.overallRisk}`]"></span>
+              <span>
+                <strong>{{ modeText[item.mode] }} · {{ item.riskCount }} 项风险</strong>
+                <small>
+                  {{ new Date(item.completedAt).toLocaleString('zh-CN') }} ·
+                  {{ item.statistics.filesChanged }} 文件 · {{ item.durationMs }}ms
+                </small>
+              </span>
+            </button>
+            <a
+              class="history-export"
+              :href="`${apiBaseUrl}/api/history/${item.id}/markdown`"
+              target="_blank"
+              rel="noopener"
+              >导出 MD</a
+            >
+          </article>
+        </div>
+        <div v-else class="history-empty">
+          完成一次异步审查后，隐私安全的结构化结果会显示在这里。
         </div>
       </section>
 
       <section v-if="result" class="results" aria-live="polite">
         <div class="section-heading result-title">
           <div>
-            <span class="step">02</span>
+            <span class="step">03</span>
             <h2>分析结果</h2>
           </div>
-          <span class="result-time">{{ new Date(result.analyzedAt).toLocaleString('zh-CN') }}</span>
+          <div class="result-heading-actions">
+            <a
+              v-if="reportDownloadUrl"
+              class="button button-ghost export-button"
+              :href="reportDownloadUrl"
+              target="_blank"
+              rel="noopener"
+              >导出 Markdown</a
+            >
+            <span class="result-time">{{
+              new Date(result.analyzedAt).toLocaleString('zh-CN')
+            }}</span>
+          </div>
         </div>
 
         <div class="metrics">
@@ -305,6 +461,6 @@ function resetSample() {
       </section>
     </main>
 
-    <footer>DAY 02 · EVIDENCE-BASED AI REVIEW · MOCK / OPENAI-COMPATIBLE / OLLAMA</footer>
+    <footer>DAY 03 · STREAMING TASKS · PRIVATE HISTORY · MARKDOWN EXPORT</footer>
   </div>
 </template>
