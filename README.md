@@ -81,6 +81,7 @@ pnpm check
 ## 项目文档
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)：系统结构、审查链路、代码边界和部署结构。
+- [`docs/CODE_WALKTHROUGH.md`](docs/CODE_WALKTHROUGH.md)：代码导读、七阶段学习路线、项目介绍模板和面试问答。
 - [`docs/EVALUATION.md`](docs/EVALUATION.md)：确定性评测结果。
 - [`docs/DEMO.md`](docs/DEMO.md)：3 分钟演示脚本和运行说明。
 - [`docs/PORTFOLIO.md`](docs/PORTFOLIO.md)：作品背景、工程亮点和技术取舍。
