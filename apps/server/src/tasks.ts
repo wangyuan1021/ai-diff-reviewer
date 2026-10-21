@@ -144,8 +144,9 @@ export class ReviewTaskManager {
       record.controller.signal.throwIfAborted()
       this.updateProgress(record, 'saving', 92)
       const completedAt = new Date().toISOString()
+      const historyId = randomUUID()
       this.options.history.save({
-        id: record.snapshot.id,
+        id: historyId,
         diffHash: createHash('sha256').update(diff).digest('hex'),
         mode: record.snapshot.mode,
         result,
@@ -154,6 +155,7 @@ export class ReviewTaskManager {
       })
       record.snapshot = {
         ...record.snapshot,
+        historyId,
         status: 'completed',
         progress: { stage: 'completed', percent: 100, message: progressMessages.completed },
         result,

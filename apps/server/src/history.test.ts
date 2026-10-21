@@ -64,4 +64,31 @@ describe('ReviewHistoryStore', () => {
     expect(markdown).toContain('Diff SHA-256')
     expect(markdown).not.toContain(rawSecretMarker)
   })
+
+  it('removes truncated changed-line evidence before persistence', () => {
+    const marker = 'TRUNCATED_EVIDENCE_MUST_NOT_BE_STORED'
+    const longLine = `console.log('${marker}_${'x'.repeat(220)}')`
+    const longDiff = `diff --git a/src/long.ts b/src/long.ts
+--- a/src/long.ts
++++ b/src/long.ts
+@@ -0,0 +1 @@
++${longLine}
+`
+    const store = new ReviewHistoryStore(':memory:')
+    stores.push(store)
+
+    const saved = store.save({
+      id: 'review-long-evidence',
+      diffHash: 'c'.repeat(64),
+      mode: 'local',
+      result: reviewDiffLocally(longDiff),
+      createdAt: '2026-10-21T00:00:00.000Z',
+      completedAt: '2026-10-21T00:00:01.000Z',
+    })
+
+    expect(JSON.stringify(saved)).not.toContain(marker)
+    expect(saved.result.risks.find((risk) => risk.ruleId === 'debug-output')?.evidence).toBe(
+      '为保护隐私，原始变更证据仅在实时审查结果中展示。',
+    )
+  })
 })

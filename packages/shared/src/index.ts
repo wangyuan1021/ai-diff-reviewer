@@ -196,6 +196,7 @@ export type ReviewResult = LocalReviewResult | AIReviewResult
 
 export interface ReviewTaskSnapshot {
   id: string
+  historyId?: string
   status: ReviewTaskStatus
   mode: ReviewMode
   progress: ReviewTaskProgress

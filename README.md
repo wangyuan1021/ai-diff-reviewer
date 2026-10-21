@@ -57,7 +57,7 @@ pnpm dev
 docker compose up --build
 ```
 
-打开 <http://localhost:8080>。Web 通过 Nginx 同源代理 API，SQLite 历史保存在 `review-data` 数据卷。停止服务使用 `docker compose down`；仅在明确需要清空历史时增加 `--volumes`。
+打开 <http://localhost:8080>。Web 端口默认只绑定宿主机 `127.0.0.1`，并通过 Nginx 同源代理 API；SQLite 历史保存在 `review-data` 数据卷。停止服务使用 `docker compose down`；仅在明确需要清空历史时增加 `--volumes`。
 
 ## 验证命令
 
@@ -150,7 +150,7 @@ Content-Type: application/json
 - `GET /api/review-tasks/:id`：查询任务快照。
 - `DELETE /api/review-tasks/:id`：取消运行中或排队中的任务。
 
-`mode` 可选 `local`、`mock`、`openai-compatible` 或 `ollama`。任务状态包括排队、运行、完成、失败、取消和超时。
+`mode` 可选 `local`、`mock`、`openai-compatible` 或 `ollama`。任务状态包括排队、运行、完成、失败、取消和超时。完成快照额外返回独立的 `historyId`，供历史详情与 Markdown 下载使用；它不会复用任务 ID。
 终态任务默认在内存中保留 15 分钟供断线重连查询，可通过 `REVIEW_TASK_RETENTION_MS` 调整；历史记录不受此限制。
 
 ### 历史与导出
@@ -166,9 +166,10 @@ Day 2 的同步接口继续保留，方便脚本调用和向后兼容；Web 工�
 ## 隐私边界
 
 - 本地规则和 Mock 模式不会把 Diff 发送给第三方；选择 OpenAI-compatible 会把必要分块发往已配置服务，Ollama 默认只访问本机服务。
-- 发送分块前会在本地将文件路径替换为 `FILE_001` 一类匿名标识，并将已识别的凭据、授权令牌、私钥、带账号密码连接串、邮箱和私网 IP 替换为类型占位符；AI 结果返回后再在本地恢复路径。
+- 发送分块前会在本地将 Prompt 中出现的真实文件路径替换为 `FILE_001` 一类匿名标识，并将已识别的凭据、授权令牌、私钥、带账号密码连接串、邮箱和私网 IP 替换为类型占位符；AI 结果返回后再在本地恢复路径。
 - SQLite 只持久化 Diff SHA-256、统计、Provider 元数据和脱敏后的结构化结果，不保存原始 Diff、hunk 或变更代码行。
-- 实时结果仍只在当前请求和浏览器会话中返回；历史详情中的文件 hunk 已移除，结构化文本中出现的原始变更行会在写库前脱敏。
+- 实时结果仍只在当前请求和浏览器会话中返回；任务 ID 与历史 ID 相互独立，历史详情中的文件 hunk 已移除，风险证据统一替换为隐私提示，其他结构化文本中出现的原始变更行会在写库前脱敏。
+- Compose 默认只监听宿主机回环地址；如需向其他设备开放，应先增加鉴权、限流和传输层保护，再显式修改端口绑定。
 - 普通日志不记录 API Key、完整原始 Diff 或模型请求正文。
 - 基于模式的脱敏只能降低泄露风险，不能保证识别任意格式的秘密或个人信息；发送外部 Provider 前仍需遵守数据分类和人工复核要求。
 - 风险规则不能替代人工代码审查、安全审计和完整测试。

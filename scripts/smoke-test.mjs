@@ -98,15 +98,16 @@ try {
   assert(created.response.status === 202, 'task creation did not return 202')
   const task = await waitForTask(created.body.task.id)
   assert(task.status === 'completed', `task finished as ${task.status}`)
+  assert(task.historyId && task.historyId !== task.id, 'history id is not isolated from task id')
   assert(task.result?.ai?.provider === 'mock', 'mock provider metadata is missing')
 
   const history = await request('/api/history?limit=1')
-  assert(history.body.items[0]?.id === task.id, 'completed task is missing from history')
-  const detail = await request(`/api/history/${task.id}`)
+  assert(history.body.items[0]?.id === task.historyId, 'completed task is missing from history')
+  const detail = await request(`/api/history/${task.historyId}`)
   assert(detail.body.result.changedFiles[0]?.hunks.length === 0, 'history contains hunk data')
   assert(!detail.text.includes(rawCodeMarker), 'history contains a raw changed line')
 
-  const markdown = await request(`/api/history/${task.id}/markdown`)
+  const markdown = await request(`/api/history/${task.historyId}/markdown`)
   assert(
     markdown.response.headers.get('content-type')?.includes('text/markdown'),
     'bad report type',

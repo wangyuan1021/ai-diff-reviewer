@@ -71,6 +71,10 @@ function withoutDiffContent(result: ReviewResult): ReviewResult {
   return {
     ...sanitized,
     changedFiles: sanitized.changedFiles.map((file) => ({ ...file, hunks: [] })),
+    risks: sanitized.risks.map((risk) => ({
+      ...risk,
+      evidence: '为保护隐私，原始变更证据仅在实时审查结果中展示。',
+    })),
   }
 }
 

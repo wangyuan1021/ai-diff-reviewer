@@ -83,16 +83,18 @@ describe('server API', () => {
     const taskId = created.body.task.id as string
     const completed = await waitForTask(app, taskId)
     expect(completed.body.task.status).toBe('completed')
+    const historyId = completed.body.task.historyId as string
+    expect(historyId).not.toBe(taskId)
 
     const history = await request(app.callback()).get('/api/history')
     expect(history.status).toBe(200)
-    expect(history.body.items[0]).toMatchObject({ id: taskId, mode: 'local' })
+    expect(history.body.items[0]).toMatchObject({ id: historyId, mode: 'local' })
 
-    const detail = await request(app.callback()).get(`/api/history/${taskId}`)
+    const detail = await request(app.callback()).get(`/api/history/${historyId}`)
     expect(detail.status).toBe(200)
     expect(detail.body.result.changedFiles[0].hunks).toEqual([])
 
-    const markdown = await request(app.callback()).get(`/api/history/${taskId}/markdown`)
+    const markdown = await request(app.callback()).get(`/api/history/${historyId}/markdown`)
     expect(markdown.status).toBe(200)
     expect(markdown.headers['content-type']).toContain('text/markdown')
     expect(markdown.text).toContain('# AI Diff Review 报告')

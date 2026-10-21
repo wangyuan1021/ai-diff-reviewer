@@ -32,7 +32,7 @@ flowchart LR
     end
 ```
 
-外部 Provider 只接收预算内的匿名化、脱敏分块。真实文件路径、完整原始 Diff 和 API Key 不写入 SQLite；历史记录只保留 Diff SHA-256、统计、Provider 元数据和脱敏后的结构化结果。
+外部 Provider 只接收预算内的匿名化、脱敏分块，最终 Prompt 中所有已知新旧文件路径都会替换为匿名 ID。真实文件路径、完整原始 Diff 和 API Key 不写入 SQLite；历史记录只保留 Diff SHA-256、统计、Provider 元数据和脱敏后的结构化结果，风险证据统一替换为隐私提示。
 
 ## 审查链路
 
@@ -59,8 +59,9 @@ sequenceDiagram
       P-->>T: JSON 风险结果
       T->>T: Schema、文件和行号校验
     end
+    T->>T: 生成独立 history id
     T->>D: 保存脱敏结构化结果
-    T-->>W: SSE 完成事件
+    T-->>W: SSE 完成事件 + history id
     W-->>U: 展示证据与建议
 ```
 
@@ -76,4 +77,4 @@ sequenceDiagram
 
 ## 部署结构
 
-`compose.yaml` 启动两个容器：`web` 在 `localhost:8080` 提供页面并代理 `/api`，`api` 只在 Compose 网络内暴露 `3000`；命名数据卷 `review-data` 持久化 SQLite。两个镜像均包含健康检查，Web 会等待 API 健康后启动。
+`compose.yaml` 启动两个容器：`web` 默认只在宿主机 `127.0.0.1:8080` 提供页面并代理 `/api`，`api` 只在 Compose 网络内暴露 `3000`；命名数据卷 `review-data` 持久化 SQLite。两个镜像均包含健康检查，Web 会等待 API 健康后启动。当前 API 没有鉴权与限流，对外部署前必须补齐访问控制并显式修改端口绑定。

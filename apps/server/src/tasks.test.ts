@@ -61,9 +61,12 @@ describe('ReviewTaskManager', () => {
     const completed = await waitForTerminal(tasks, created.id)
 
     expect(completed.status).toBe('completed')
+    expect(completed.historyId).toBeDefined()
+    expect(completed.historyId).not.toBe(completed.id)
     expect(completed.result?.statistics.filesChanged).toBe(1)
     expect(stages).toEqual(expect.arrayContaining(['queued', 'parsing', 'local-review', 'saving']))
-    expect(store.get(created.id)?.result.changedFiles[0]?.hunks).toEqual([])
+    expect(store.get(completed.historyId!)?.result.changedFiles[0]?.hunks).toEqual([])
+    expect(store.get(created.id)).toBeNull()
   })
 
   it('cancels a queued task before execution', async () => {

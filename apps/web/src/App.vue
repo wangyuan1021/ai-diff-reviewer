@@ -31,8 +31,7 @@ const lineCount = computed(() => (diff.value ? diff.value.split('\n').length : 0
 const byteCount = computed(() => new Blob([diff.value]).size)
 const isAIResult = computed((): boolean => Boolean(result.value && 'ai' in result.value))
 const reportDownloadUrl = computed(() => {
-  const historyId =
-    selectedHistory.value?.id ?? (task.value?.status === 'completed' ? task.value.id : '')
+  const historyId = selectedHistory.value?.id ?? task.value?.historyId ?? ''
   return historyId ? `${apiBaseUrl}/api/history/${historyId}/markdown` : ''
 })
 

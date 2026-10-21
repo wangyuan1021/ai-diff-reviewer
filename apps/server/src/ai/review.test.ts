@@ -118,10 +118,11 @@ describe('reviewDiffWithAI', () => {
     const sensitiveDiff = `diff --git a/src/internal/client.ts b/src/internal/client.ts
 --- a/src/internal/client.ts
 +++ b/src/internal/client.ts
-@@ -0,0 +1,3 @@
+@@ -0,0 +1,4 @@
 +const password = "fictional-secret-value"
 +const owner = "demo.person@example.test"
 +const host = "192.168.10.24"
++const sourcePath = "src/internal/client.ts"
 `
     const provider = new SequenceProvider([JSON.stringify(output({ risks: [] }))])
 

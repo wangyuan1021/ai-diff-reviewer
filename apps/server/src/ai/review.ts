@@ -56,9 +56,21 @@ function buildMessages(
     '待审查分块：',
     ...chunks.map((chunk) => `--- CHUNK ${chunk.id} ---\n${chunk.content}`),
   ].join('\n')
+  const pathAliases = parsed.files
+    .flatMap((file) =>
+      [file.path, file.oldPath, file.newPath]
+        .filter((path): path is string => Boolean(path))
+        .map((path) => [path, fileAliases.get(file.path)] as const),
+    )
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+    .sort(([left], [right]) => right.length - left.length)
+  const anonymizedPrompt = pathAliases.reduce(
+    (prompt, [path, alias]) => prompt.replaceAll(path, alias),
+    userPrompt,
+  )
   return [
     { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: userPrompt },
+    { role: 'user', content: anonymizedPrompt },
   ]
 }
 

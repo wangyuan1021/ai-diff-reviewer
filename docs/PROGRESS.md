@@ -254,6 +254,7 @@ pnpm dev
 
 - 新增多阶段 `Dockerfile`，Builder 统一构建 Server/Web，生产 Server 镜像只携带独立 bundle。
 - 新增 `compose.yaml`，Web 通过 Nginx 同源代理 `/api`，API 只在 Compose 网络内暴露。
+- Web 端口默认只绑定宿主机 `127.0.0.1`，避免未配置鉴权与限流时意外暴露到局域网。
 - Server 与 Web 均配置健康检查；Web 等待 API 健康后启动。
 - SQLite 使用 `review-data` 命名卷持久化，容器默认继续使用 Mock Provider。
 - Nginx 禁用 API 响应缓冲以支持 SSE，并增加基础响应安全头。
@@ -282,10 +283,17 @@ pnpm dev
 
 ## Day 05 验证证据
 
-- `pnpm check`：ESLint 零错误，4 个 workspace 类型检查通过，9 个测试文件、38 项测试通过，Server/Web 生产构建成功，HTTP 冒烟测试通过。
+- `pnpm check`：ESLint 零错误，4 个 workspace 类型检查通过，9 个测试文件、39 项测试通过，Server/Web 生产构建成功，HTTP 冒烟测试通过。
 - `pnpm eval`：16/16 样本通过，26/26 预期规则命中，7/7 敏感类型命中。
 - 浏览器实测：默认样例识别 2 个文件、7 项风险、Mock AI 2/2 分块覆盖，历史自动刷新。
 - 当前开发机没有 Docker CLI，未在本地执行镜像构建；`.github/workflows/ci.yml` 已配置 Buildx 构建两个目标，需由 GitHub Actions 或安装 Docker 的环境最终运行验证。
+
+## 完成后安全加固
+
+- 异步任务 ID 与持久化历史 ID 改为两个独立 UUID；历史列表公开的 ID 无法再用于读取仍在内存保留期内的实时任务结果。
+- 历史中的风险证据统一替换为隐私提示，避免超长证据经过截断后绕过原始变更行替换；新增对应回归测试。
+- AI Prompt 完成拼装后再次全量替换真实新旧文件路径，覆盖代码字符串、hunk 文本等重复路径位置。
+- Compose Web 端口默认只绑定 `127.0.0.1`；对外部署前仍需补充鉴权、限流和 HTTPS。
 
 ## 后续范围
 
