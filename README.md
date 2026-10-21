@@ -1,8 +1,10 @@
 # AI Diff Reviewer
 
-一个可解释、可评测、隐私优先的 Git Diff 风险分析工具。当前 Day 04 版本支持本地规则、可替换 AI Provider、Prompt 脱敏、可重复评测、SSE 实时进度、任务取消与超时、隐私安全的 SQLite 历史和 Markdown 导出。
+一个可解释、可评测、隐私优先的 Git Diff 风险分析工具。当前 Day 05 版本支持本地规则、可替换 AI Provider、Prompt 脱敏、可重复评测、SSE 实时进度、任务取消与超时、隐私安全的 SQLite 历史、Markdown 导出、容器化部署和持续集成。
 
 当前开发状态、验证证据、技术决策和下一步计划见 [`docs/PROGRESS.md`](docs/PROGRESS.md)。
+
+![AI Diff Reviewer 演示结果](docs/assets/demo-result.png)
 
 ## 当前能力
 
@@ -23,6 +25,8 @@
 - 浏览历史审查详情，并导出不含原始代码的 Markdown 报告。
 - 在调用 AI Provider 前识别凭据、授权令牌、私钥、连接串、邮箱和私网 IP，以类型占位符替换敏感值并匿名化文件路径。
 - 用 16 个完全虚构的 Diff 样本确定性评测本地规则和 Prompt 脱敏，生成 Markdown 与 JSON 报告。
+- 通过多阶段 Docker 构建、Nginx 同源代理、健康检查和 SQLite 数据卷进行自托管。
+- 在 GitHub Actions 中执行代码检查、评测报告漂移检查和 Server/Web 镜像构建。
 
 ## 技术栈
 
@@ -45,6 +49,16 @@ pnpm dev
 
 页面默认带有一份虚构风险样例，也可以使用 `samples/day-01-risky.diff`。默认选择 Mock AI，不需要 API Key，也不会发起外部模型请求。
 
+## Docker 启动
+
+需要 Docker Engine 及 Docker Compose：
+
+```bash
+docker compose up --build
+```
+
+打开 <http://localhost:8080>。Web 通过 Nginx 同源代理 API，SQLite 历史保存在 `review-data` 数据卷。停止服务使用 `docker compose down`；仅在明确需要清空历史时增加 `--volumes`。
+
 ## 验证命令
 
 ```bash
@@ -53,6 +67,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm eval
+pnpm test:smoke
 ```
 
 也可以运行全部检查：
@@ -60,6 +75,15 @@ pnpm eval
 ```bash
 pnpm check
 ```
+
+`pnpm check` 已包含生产 Server 的真实 HTTP 冒烟测试。对运行中的 Docker 环境可执行 `SMOKE_BASE_URL=http://localhost:8080 pnpm test:smoke`。
+
+## 项目文档
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)：系统结构、审查链路、代码边界和部署结构。
+- [`docs/EVALUATION.md`](docs/EVALUATION.md)：确定性评测结果。
+- [`docs/DEMO.md`](docs/DEMO.md)：3 分钟演示脚本和运行说明。
+- [`docs/PORTFOLIO.md`](docs/PORTFOLIO.md)：作品背景、工程亮点和技术取舍。
 
 ## API
 
@@ -156,4 +180,4 @@ Day 2 的同步接口继续保留，方便脚本调用和向后兼容；Web 工�
 - Day 02：Mock / OpenAI-compatible / Ollama Provider 与结构化 AI 审查（已完成）。
 - Day 03：SSE、取消、超时、SQLite 历史记录和 Markdown 导出（已完成）。
 - Day 04：敏感信息脱敏和可重复评测集（已完成）。
-- Day 05：Docker、CI、完整测试、架构图与演示材料。
+- Day 05：Docker、CI、完整测试、架构图与演示材料（已完成）。

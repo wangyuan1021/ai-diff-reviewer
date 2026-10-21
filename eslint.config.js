@@ -33,4 +33,13 @@ export default [
       'vue/singleline-html-element-content-newline': 'off',
     },
   },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
 ]

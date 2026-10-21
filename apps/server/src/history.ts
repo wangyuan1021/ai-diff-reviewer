@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync as Database } from 'node:sqlite'
 import type {
   AIProviderName,
   DiffStatistics,
@@ -11,6 +12,12 @@ import type {
   ReviewResult,
   RiskSeverity,
 } from '@ai-diff-reviewer/shared'
+
+type DatabaseConstructor = new (path: string) => Database
+
+const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite') as {
+  DatabaseSync: DatabaseConstructor
+}
 
 interface HistoryRow {
   id: string
@@ -84,7 +91,7 @@ function summaryFromRow(row: HistoryRow): ReviewHistorySummary {
 }
 
 export class ReviewHistoryStore {
-  private readonly database: DatabaseSync
+  private readonly database: Database
 
   constructor(databasePath: string) {
     if (databasePath !== ':memory:') {

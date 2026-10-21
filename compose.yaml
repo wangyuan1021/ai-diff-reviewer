@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      target: server
+    environment:
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MAX_PROMPT_CHARACTERS: ${AI_MAX_PROMPT_CHARACTERS:-60000}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-30000}
+      DATABASE_PATH: /app/data/reviews.db
+      MAX_DIFF_BYTES: ${MAX_DIFF_BYTES:-524288}
+      REVIEW_TASK_RETENTION_MS: ${REVIEW_TASK_RETENTION_MS:-900000}
+      REVIEW_TASK_TIMEOUT_MS: ${REVIEW_TASK_TIMEOUT_MS:-60000}
+      WEB_ORIGIN: http://localhost:${WEB_PORT:-8080}
+    expose:
+      - '3000'
+    restart: unless-stopped
+    volumes:
+      - review-data:/app/data
+
+  web:
+    build:
+      context: .
+      target: web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${WEB_PORT:-8080}:8080'
+    restart: unless-stopped
+
+volumes:
+  review-data:

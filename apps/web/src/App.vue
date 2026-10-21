@@ -468,6 +468,6 @@ function resetSample() {
       </section>
     </main>
 
-    <footer>DAY 04 · PROMPT REDACTION · REPEATABLE EVALUATION · PRIVATE HISTORY</footer>
+    <footer>DAY 05 · CONTAINERIZED · CI VERIFIED · DEMO READY</footer>
   </div>
 </template>

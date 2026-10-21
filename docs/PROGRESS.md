@@ -8,8 +8,8 @@
 - 项目路径：仓库根目录
 - GitHub 仓库：以当前项目的 `origin` remote 为准
 - 当前分支：`main`
-- 当前阶段：Day 04 已完成，待开始 Day 05
-- 最近完成阶段：Day 04 Prompt 脱敏与可重复评测
+- 当前阶段：Day 05 已完成
+- 最近完成阶段：Day 05 容器化、CI、完整验证与演示材料
 - 隐私要求：不得使用公司代码、业务名称、内部域名、接口地址、凭据或其他敏感信息；样例只使用虚构内容或公开开源内容。
 
 ## 五天目标
@@ -248,15 +248,54 @@ pnpm dev
 - `pnpm check`：ESLint 零错误，4 个 workspace 类型检查通过，9 个测试文件、38 项测试全部通过，Server/Web 生产构建成功。
 - 详细结果见 [`docs/EVALUATION.md`](EVALUATION.md)。
 
+## Day 05 完成内容
+
+### Docker 与部署
+
+- 新增多阶段 `Dockerfile`，Builder 统一构建 Server/Web，生产 Server 镜像只携带独立 bundle。
+- 新增 `compose.yaml`，Web 通过 Nginx 同源代理 `/api`，API 只在 Compose 网络内暴露。
+- Server 与 Web 均配置健康检查；Web 等待 API 健康后启动。
+- SQLite 使用 `review-data` 命名卷持久化，容器默认继续使用 Mock Provider。
+- Nginx 禁用 API 响应缓冲以支持 SSE，并增加基础响应安全头。
+
+### CI 与完整验证
+
+- 新增 GitHub Actions：Node 22 + pnpm 11 执行 `pnpm check` 和 `pnpm eval`。
+- CI 验证生成的评测报告没有漂移，并用 Buildx 分别构建 Server/Web 镜像目标。
+- `pnpm check` 新增生产 bundle HTTP 冒烟测试，覆盖健康检查、Mock 异步任务、历史隐私和 Markdown 导出。
+- 将 Server 打包为独立运行 bundle，并修复 `node:sqlite` 与 CommonJS 依赖在 ESM bundle 中的运行兼容问题。
+
+### 架构与演示材料
+
+- `docs/ARCHITECTURE.md` 提供系统结构图、审查时序图、代码边界和部署结构。
+- `docs/DEMO.md` 提供本地/Docker 启动方法、3 分钟演示脚本和演示边界。
+- `docs/PORTFOLIO.md` 总结问题背景、工程亮点、质量证据、技术取舍和后续演进。
+- 新增真实 Mock 审查结果截图 `docs/assets/demo-result.png`，并在 README 和演示文档中展示。
+
+## Day 05 验收结果
+
+- [x] 多阶段 Dockerfile 与 Compose 覆盖 Web、API、健康检查、同源代理和 SQLite 数据卷。
+- [x] GitHub Actions 覆盖代码检查、确定性评测、报告漂移和两个镜像目标构建。
+- [x] 生产 Server bundle 可在无项目 `node_modules` 的运行方式下启动并完成 HTTP 冒烟测试。
+- [x] 架构图、演示脚本、真实页面截图和作品说明齐全。
+- [x] 页面实测 Mock 审查、SSE 完成、历史刷新与结果展示，浏览器控制台无 error 或 warning。
+
+## Day 05 验证证据
+
+- `pnpm check`：ESLint 零错误，4 个 workspace 类型检查通过，9 个测试文件、38 项测试通过，Server/Web 生产构建成功，HTTP 冒烟测试通过。
+- `pnpm eval`：16/16 样本通过，26/26 预期规则命中，7/7 敏感类型命中。
+- 浏览器实测：默认样例识别 2 个文件、7 项风险、Mock AI 2/2 分块覆盖，历史自动刷新。
+- 当前开发机没有 Docker CLI，未在本地执行镜像构建；`.github/workflows/ci.yml` 已配置 Buildx 构建两个目标，需由 GitHub Actions 或安装 Docker 的环境最终运行验证。
+
 ## 后续范围
 
-- Day 05：补齐测试、Docker、GitHub Actions、架构图、截图和作品说明。
+- MVP 五天路线已完成。后续可增加真实项目盲测、团队规则配置、PR 集成、鉴权与多实例任务队列。
 
 ## 新对话开场语
 
 ```text
 继续开发当前 AI Diff Reviewer 仓库。
-请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试，然后按 Day 05 计划补齐测试、Docker、GitHub Actions、架构图、截图和作品说明。不要使用或引入任何公司代码和敏感信息。
+请先阅读 README.md 和 docs/PROGRESS.md，检查 Git 状态并运行现有测试。五天 MVP 已完成，请从“后续范围”选择下一阶段，继续遵守隐私边界，不要使用或引入任何公司代码和敏感信息。
 ```
 
 ## Git 注意事项

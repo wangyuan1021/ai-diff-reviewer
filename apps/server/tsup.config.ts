@@ -6,5 +6,8 @@ export default defineConfig({
   platform: 'node',
   target: 'node22',
   clean: true,
-  noExternal: ['@ai-diff-reviewer/diff-engine', '@ai-diff-reviewer/shared'],
+  noExternal: [/.*/],
+  banner: {
+    js: "import { createRequire as __bundleCreateRequire } from 'node:module'; const require = __bundleCreateRequire(import.meta.url);",
+  },
 })
